@@ -159,16 +159,12 @@ class Runner:
         # for method in all_test_methods:
         for method in all_test_methods:
             print("==================================================================================")
-            assert method.count("#") == 1, "there should be only one #, but actually you have: " + method
-
             method_out = open(out_dir + method + "-log.txt", "w+")
             method_report_path = report_dir + method + "-report.txt"
             start_time_for_this_method = time.time()
-            if self.module == "alluxio-core":
-                cmd = ["mvn", "surefire:test", "-Dtest=" + method, "-DfailIfNoTests=false"]
-            else:
-                cmd = ["mvn", "surefire:test", "-Dtest=" + method]
-            print ("mvn surefire:test -Dtest="+method)
+            # Print out warn level logs
+            cmd = ["./gradlew", "core:unitTest", "--tests", method, "-i"]
+            print ("./gradlew core:unitTest --tests "+method)
             child = subprocess.Popen(cmd, stdout=method_out, stderr=method_out)
             child.wait()
 
@@ -187,15 +183,15 @@ class Runner:
                 self.failure_list.append(method)
                 continue
 
-            class_name = method.split("#")[0]
-            suffix_filename_to_check = class_name + "-output.txt"
-            full_path = self.get_full_report_path(suffix_filename_to_check)
-            if full_path == "none":
-                print("no report for " + method)
-                self.no_report_list.append(method)     
-            else:
-                shutil.copy(full_path, method_report_path)
-                self.parse(open(full_path, "r").readlines(), method)
+            # class_name = method.split("#")[0]
+            # suffix_filename_to_check = class_name + "-output.txt"
+            # full_path = self.get_full_report_path(suffix_filename_to_check)
+            # if full_path == "none":
+            #     print("no report for " + method)
+            #     self.no_report_list.append(method)
+            # else:
+            #     shutil.copy(full_path, method_report_path)
+            self.parse(open(out_dir + method + "-log.txt", "r").readlines(), method)
 
         shutil.rmtree(out_dir)
         shutil.rmtree(report_dir)
@@ -213,7 +209,6 @@ class Runner:
 
 if __name__ == "__main__":
     s = time.time()
-    sys.argv.append("hadoop-common")
     usage = "usage: python3 runner.py project [options]"
     parser = OptionParser(usage=usage)
     parser.add_option("-a", action="store_true", dest="aggressive", default=False,
