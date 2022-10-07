@@ -134,7 +134,8 @@ class Runner:
         elif "BUILD FAILURE" in log_content:
             return False
         else:
-            assert False, "wrong log content"
+            print("wrong log content")
+            return False
 
     def persist_list(self, method_list, file_name):
         json_file = open("results/%s/logs/%s.json" % (self.module, file_name), "w")
@@ -183,14 +184,6 @@ class Runner:
                 self.failure_list.append(method)
                 continue
 
-            # class_name = method.split("#")[0]
-            # suffix_filename_to_check = class_name + "-output.txt"
-            # full_path = self.get_full_report_path(suffix_filename_to_check)
-            # if full_path == "none":
-            #     print("no report for " + method)
-            #     self.no_report_list.append(method)
-            # else:
-            #     shutil.copy(full_path, method_report_path)
             self.parse(open(out_dir + method + "-log.txt", "r").readlines(), method)
 
         shutil.rmtree(out_dir)
