@@ -164,8 +164,8 @@ class Runner:
             method_report_path = report_dir + method + "-report.txt"
             start_time_for_this_method = time.time()
             # Print out warn level logs
-            cmd = ["./gradlew", "core:unitTest", "--tests", method, "-i"]
-            print ("./gradlew core:unitTest --tests "+method)
+            cmd = ["./gradlew", "core:test", "--tests", method, "-i"]
+            print ("./gradlew core:test --tests "+method)
             child = subprocess.Popen(cmd, stdout=method_out, stderr=method_out)
             child.wait()
 
