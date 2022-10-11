@@ -63,7 +63,7 @@ class Runner:
     def skipTrace(self, trace):
         if trace == "java.lang.Thread":
             return True
-        if "sun.reflect" in trace:
+        if "kafka.server.KafkaConfig" in trace:
             return True
         if self.module == "hadoop-common" or self.module == "hadoop-hdfs" or self.module == "hbase-server":
             if "org.apache.hadoop.conf" in trace and "Test" not in trace:
@@ -81,7 +81,7 @@ class Runner:
         return False
 
     def setInTest(self, stacktrace):
-        traces = stacktrace.split("\t")
+        traces = stacktrace.split("#")
         for trace in traces:
             if self.skipTrace(trace):
                 continue
@@ -134,7 +134,8 @@ class Runner:
         elif "BUILD FAILURE" in log_content:
             return False
         else:
-            assert False, "wrong log content"
+            print("wrong log content")
+            return False
 
     def persist_list(self, method_list, file_name):
         json_file = open("results/%s/logs/%s.json" % (self.module, file_name), "w")
@@ -159,16 +160,12 @@ class Runner:
         # for method in all_test_methods:
         for method in all_test_methods:
             print("==================================================================================")
-            assert method.count("#") == 1, "there should be only one #, but actually you have: " + method
-
             method_out = open(out_dir + method + "-log.txt", "w+")
             method_report_path = report_dir + method + "-report.txt"
             start_time_for_this_method = time.time()
-            if self.module == "alluxio-core":
-                cmd = ["mvn", "surefire:test", "-Dtest=" + method, "-DfailIfNoTests=false"]
-            else:
-                cmd = ["mvn", "surefire:test", "-Dtest=" + method]
-            print ("mvn surefire:test -Dtest="+method)
+            # Print out warn level logs
+            cmd = ["./gradlew", "-Prerun-tests", "core:test", "--tests", method, "-i"]
+            print ("./gradlew -Prerun-tests core:test --tests " + method + " -i")
             child = subprocess.Popen(cmd, stdout=method_out, stderr=method_out)
             child.wait()
 
@@ -187,15 +184,7 @@ class Runner:
                 self.failure_list.append(method)
                 continue
 
-            class_name = method.split("#")[0]
-            suffix_filename_to_check = class_name + "-output.txt"
-            full_path = self.get_full_report_path(suffix_filename_to_check)
-            if full_path == "none":
-                print("no report for " + method)
-                self.no_report_list.append(method)     
-            else:
-                shutil.copy(full_path, method_report_path)
-                self.parse(open(full_path, "r").readlines(), method)
+            self.parse(open(out_dir + method + "-log.txt", "r").readlines(), method)
 
         shutil.rmtree(out_dir)
         shutil.rmtree(report_dir)
@@ -213,7 +202,6 @@ class Runner:
 
 if __name__ == "__main__":
     s = time.time()
-    sys.argv.append("hadoop-common")
     usage = "usage: python3 runner.py project [options]"
     parser = OptionParser(usage=usage)
     parser.add_option("-a", action="store_true", dest="aggressive", default=False,
