@@ -63,7 +63,7 @@ class Runner:
     def skipTrace(self, trace):
         if trace == "java.lang.Thread":
             return True
-        if "sun.reflect" in trace:
+        if "kafka.server.KafkaConfig" in trace:
             return True
         if self.module == "hadoop-common" or self.module == "hadoop-hdfs" or self.module == "hbase-server":
             if "org.apache.hadoop.conf" in trace and "Test" not in trace:
@@ -81,7 +81,7 @@ class Runner:
         return False
 
     def setInTest(self, stacktrace):
-        traces = stacktrace.split("\t")
+        traces = stacktrace.split("#")
         for trace in traces:
             if self.skipTrace(trace):
                 continue
@@ -164,8 +164,8 @@ class Runner:
             method_report_path = report_dir + method + "-report.txt"
             start_time_for_this_method = time.time()
             # Print out warn level logs
-            cmd = ["./gradlew", "core:test", "--tests", method, "-i"]
-            print ("./gradlew core:test --tests "+method)
+            cmd = ["./gradlew", "-Prerun-tests", "core:test", "--tests", method, "-i"]
+            print ("./gradlew -Prerun-tests core:test --tests " + method + " -i")
             child = subprocess.Popen(cmd, stdout=method_out, stderr=method_out)
             child.wait()
 
