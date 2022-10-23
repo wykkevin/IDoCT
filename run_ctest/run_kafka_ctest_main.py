@@ -3,14 +3,43 @@ import xml.etree.ElementTree as ET
 import json
 from subprocess import Popen, PIPE
 
-from run_ctest import run_test_utils
+
+def read_input_by_line():
+    updated_configs = []
+    path = "./kafka-configs/kafka-ctest-config.csv"
+    config_file = open(path, "r")
+    config_lines = config_file.readlines()
+    for line in config_lines:
+        split_line = line.split(",")
+        name = split_line[0]
+        value = split_line[1]
+
+        conf_xml = ET.Element("config")
+        prop = ET.SubElement(conf_xml, "configs")
+        n = ET.SubElement(prop, "name")
+        v = ET.SubElement(prop, "value")
+        n.text = name
+        v.text = value
+        updated_configs.append(name)
+
+        # Add the file to the kafka project
+        inject_path = "../../kafka/clients/src/main/resources/ctest.xml"
+        print(">>>>[ctest_core] injecting into file: {}".format(inject_path))
+        file = open(inject_path, "wb")
+        file.write(str.encode(
+            "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?>\n"))
+        file.write(ET.tostring(conf_xml))
+        file.close()
+        ctests = extract_mapping(updated_configs)
+        test_results = run_all_tests(ctests)
+        store_test_results(test_results, name + "," + value + ".csv")
 
 
-def readInput():
+def read_input():
     # Read input
     updated_configs = []
-    for fileName in os.listdir("kafka-configs"):
-        path = os.path.join("kafka-configs", fileName)
+    for file_name in os.listdir("kafka-configs"):
+        path = os.path.join("kafka-configs", file_name)
         config_file = open(path, "r")
         config_lines = config_file.readlines()
         conf_xml = ET.Element("config")
@@ -25,15 +54,17 @@ def readInput():
             v.text = value
             updated_configs.append(name)
 
-    # Add the file to the kafka project
-    inject_path = "../../kafka/clients/src/main/resources/ctest.xml"
-    print(">>>>[ctest_core] injecting into file: {}".format(inject_path))
-    file = open(inject_path, "wb")
-    file.write(str.encode(
-        "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?>\n"))
-    file.write(ET.tostring(conf_xml))
-    file.close()
-    return updated_configs
+        # Add the file to the kafka project
+        inject_path = "../../kafka/clients/src/main/resources/ctest.xml"
+        print(">>>>[ctest_core] injecting into file: {}".format(inject_path))
+        file = open(inject_path, "wb")
+        file.write(str.encode(
+            "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?>\n"))
+        file.write(ET.tostring(conf_xml))
+        file.close()
+        ctests = extract_mapping(updated_configs)
+        test_results = run_all_tests(ctests)
+        store_test_results(test_results, file_name)
 
 
 # Find all the tests that has the changed config.
@@ -61,17 +92,30 @@ def run_all_tests(tests):
     print("testing " + str(len(tests)) + " tests")
     kafka_dir = "../../kafka/"
     os.chdir(kafka_dir)
+    results = {}
     print("test dir " + os.getcwd())
     for test in tests:
         print("running test " + test)
-        cmd = ["./gradlew", "-Prerun-tests", "core:test", "--tests", test, "-i"]
+        cmd = ["./gradlew", "-Prerun-tests", "core:test", "--tests", test]
         process = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        stdout = ""
-        stderr = ""
         stdout, stderr = process.communicate()
+        if "PASSED" in str(stdout):
+            results[test] = True
+            print(test + " is passed")
+        else:
+            results[test] = False
+            print(test + " is failed")
+    return results
 
-        print_output = run_test_utils.strip_ansi(stdout.decode("ascii", "ignore"))
-        print(print_output)
+
+def store_test_results(test_results, config_file_name):
+    result_file_name = config_file_name.split(".csv")[0] + ".txt"
+    result_path = "../IDoCT/run_ctest/kafka-configs/" + result_file_name
+    file = open(result_path, "w")
+    file.write(str(len(test_results)) + " tests run for this config\n")
+    for result in test_results:
+        file.write(result + "," + str(test_results[result]) + "\n")
+    file.close()
 
 
 def clean_injected_file():
@@ -82,10 +126,9 @@ def clean_injected_file():
 
 
 def main():
-    updated_configs = readInput()
-    ctests = extract_mapping(updated_configs)
-    run_all_tests(ctests)
-    # clean_injected_file()
+    # read_input()  # Run ctest with multiple config changes
+    read_input_by_line()  # Run ctest with one config change, but the changes are stored in a single file
+    clean_injected_file()
 
 
 main()
