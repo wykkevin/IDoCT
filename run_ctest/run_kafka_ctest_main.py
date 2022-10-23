@@ -32,7 +32,9 @@ def read_input_by_line():
         file.close()
         ctests = extract_mapping(updated_configs)
         test_results = run_all_tests(ctests)
-        store_test_results(test_results, name + "," + value + ".csv")
+        config_pairs = {}
+        config_pairs[name] = value
+        store_test_results(test_results, config_pairs, "kafka-ctest-config.csv")
 
 
 def read_input():
@@ -84,6 +86,7 @@ def extract_mapping(updated_configs):
             if updated_config in related_configs:
                 ctest_tests.append(test)
                 break
+    mapping_file.close()
     return ctest_tests
 
 
@@ -105,16 +108,21 @@ def run_all_tests(tests):
         else:
             results[test] = False
             print(test + " is failed")
+    os.chdir("../IDoCT/run_ctest/")
     return results
 
 
-def store_test_results(test_results, config_file_name):
-    result_file_name = config_file_name.split(".csv")[0] + ".txt"
-    result_path = "../IDoCT/run_ctest/kafka-configs/" + result_file_name
-    file = open(result_path, "w")
+def store_test_results(test_results, config_pairs, config_file_name):
+    result_file_name = config_file_name.split(".csv")[0] + "_result.txt"
+    result_path = "./kafka-configs/" + result_file_name
+    file = open(result_path, "a")
+    file.write("Testing with " + str(len(config_pairs)) + " configs\n")
+    for config in config_pairs:
+        file.write(config + ":" + str(config_pairs[config]) + "\n")
     file.write(str(len(test_results)) + " tests run for this config\n")
     for result in test_results:
         file.write(result + "," + str(test_results[result]) + "\n")
+    file.write("End of a Ctest\n")
     file.close()
 
 
