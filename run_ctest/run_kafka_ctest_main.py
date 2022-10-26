@@ -4,6 +4,15 @@ import json
 from subprocess import Popen, PIPE
 
 
+# Run this file to do ctest on Kafka. This will find all the tests that uses the
+# modified config values and test them.
+# To test with one config change, add the config in kafka-ctest-config.csv file
+# in the format of one config each line like test_config,test_value. Use the
+# read_input_by_line() method.
+# To test with multiple config changes, add the configs in a .csv file under the
+# kafka-configs/ directory. You can add multiple files each time. Use the
+# read_input() method.
+
 def read_input_by_line():
     updated_configs = []
     path = "./kafka-configs/kafka-ctest-config.csv"
@@ -70,7 +79,6 @@ def read_input():
 
 
 # Find all the tests that has the changed config.
-
 # From parse_input.py
 def extract_mapping(updated_configs):
     """get tests associated with a list of params from mapping"""
