@@ -42,7 +42,11 @@ def run_test(test_name):
     process = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr =process.communicate()
     print_output = run_test_utils.strip_ansi(stdout.decode("ascii", "ignore"))
+    print("==========output==========")
     print(print_output)
+    print("==========error==========")
+    print_error = run_test_utils.strip_ansi(stderr.decode("ascii", "ignore"))
+    print(print_error)
     os.chdir("../IDoCT/run_ctest/")
 
 
