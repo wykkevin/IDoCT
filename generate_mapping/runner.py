@@ -63,7 +63,7 @@ class Runner:
     def skipTrace(self, trace):
         if trace == "java.lang.Thread":
             return True
-        if "kafka.server.KafkaConfig" in trace:
+        if "kafka.server.KafkaConfig" in trace and "Test" not in trace:
             return True
         if self.module == "hadoop-common" or self.module == "hadoop-hdfs" or self.module == "hbase-server":
             if "org.apache.hadoop.conf" in trace and "Test" not in trace:
