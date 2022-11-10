@@ -75,7 +75,7 @@ def read_input():
         file.close()
         ctests = extract_mapping(updated_configs)
         test_results = run_all_tests(ctests)
-        store_test_results(test_results, file_name)
+        store_test_results(test_results, {}, file_name)
 
 
 # Find all the tests that has the changed config.
